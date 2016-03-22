@@ -9,7 +9,7 @@
  */
 angular.module('ionic.contrib.drawer', ['ionic'])
 
-.controller('drawerCtrl', ['$element', '$attrs', '$ionicGesture', '$document', function($element, $attr, $ionicGesture, $document) {
+.controller('drawerCtrl', ['$scope', '$window', '$element', '$attrs', '$ionicGesture', '$document', function($scope, $window, $element, $attr, $ionicGesture, $document) {
   var el = $element[0];
   var dragging = false;
   var startX, lastX, offsetX, newX;
@@ -63,6 +63,9 @@ angular.module('ionic.contrib.drawer', ['ionic'])
     console.log('Offset:', offsetX);
   };
 
+  side = $attr.side == 'left' ? LEFT : RIGHT;
+  console.log(side);
+
   var doEndDrag = function(e) {
     startX = null;
     lastX = null;
@@ -79,10 +82,15 @@ angular.module('ionic.contrib.drawer', ['ionic'])
     enableAnimation();
 
     ionic.requestAnimationFrame(function() {
-      if(newX < (-width / 2)) {
+      if(side === LEFT && newX < (-width / 2)) {
         el.style.transform = el.style.webkitTransform = 'translate3d(' + -width + 'px, 0, 0)';
+        angular.element(document.getElementById('blurrable-content')).css('-webkit-filter', 'blur(0)');
+      } else if(side === RIGHT && newX > (width / 2)) {
+        el.style.transform = el.style.webkitTransform = 'translate3d(' + width + 'px, 0, 0)';
+        angular.element(document.getElementById('blurrable-content')).css('-webkit-filter', 'blur(0)');
       } else {
         el.style.transform = el.style.webkitTransform = 'translate3d(0px, 0, 0)';
+        angular.element(document.getElementById('blurrable-content')).css('-webkit-filter', 'blur(10px)');
       }
     });
   };
@@ -104,15 +112,20 @@ angular.module('ionic.contrib.drawer', ['ionic'])
       if(Math.abs(lastX - startX) > thresholdX) {
         if(isTarget(e.target)) {
           startTargetDrag(e);
-        } else if(startX < edgeX) {
+        } else if((side === LEFT && startX < edgeX) || (side === RIGHT && startX > ($window.innerWidth - edgeX))) {
           startDrag(e);
         } 
       }
     } else {
-      console.log(lastX, offsetX, lastX - offsetX);
-      newX = Math.min(0, (-width + (lastX - offsetX)));
+      //console.log(lastX, offsetX, lastX - offsetX);
+      if(side === LEFT) newX = Math.min(0, (-width + (lastX - offsetX)));
+      if(side === RIGHT) newX = Math.max(0, width - ($window.innerWidth - (lastX - offsetX)));
       ionic.requestAnimationFrame(function() {
         el.style.transform = el.style.webkitTransform = 'translate3d(' + newX + 'px, 0, 0)';
+        var blurPx;
+        if(side === LEFT) blurPx = (lastX > width) ? 10 : Math.round((lastX / width) * 10);
+        if(side === RIGHT) blurPx = (newX > width) ? 0 : Math.round(((width - newX) / width) * 10);
+        angular.element(document.getElementById('blurrable-content')).css('-webkit-filter', 'blur(' + blurPx + 'px)');
       });
 
     }
@@ -122,9 +135,6 @@ angular.module('ionic.contrib.drawer', ['ionic'])
     }
   };
 
-  side = $attr.side == 'left' ? LEFT : RIGHT;
-  console.log(side);
-
   $ionicGesture.on('drag', function(e) {
     doDrag(e);
   }, $document);
@@ -133,7 +143,8 @@ angular.module('ionic.contrib.drawer', ['ionic'])
   }, $document);
 
 
-  this.close = function() {
+  this.close = function(closeSide) {
+    if(closeSide !== side) return;
     enableAnimation();
     ionic.requestAnimationFrame(function() {
       if(side === LEFT) {
@@ -142,9 +153,11 @@ angular.module('ionic.contrib.drawer', ['ionic'])
         el.style.transform = el.style.webkitTransform = 'translate3d(100%, 0, 0)';
       }
     });
+    $scope.blurContent(10, 20, 0, true);
   };
 
-  this.open = function() {
+  this.open = function(openSide) {
+    if(openSide !== side) return;
     enableAnimation();
     ionic.requestAnimationFrame(function() {
       if(side === LEFT) {
@@ -153,6 +166,7 @@ angular.module('ionic.contrib.drawer', ['ionic'])
         el.style.transform = el.style.webkitTransform = 'translate3d(0%, 0, 0)';
       }
     });
+    $scope.blurContent(0, 20, 10);
   };
 }])
 
@@ -162,25 +176,24 @@ angular.module('ionic.contrib.drawer', ['ionic'])
     controller: 'drawerCtrl',
     link: function($scope, $element, $attr, ctrl) {
       $element.addClass($attr.side);
-      $scope.openDrawer = function() {
-        console.log('open');
-        ctrl.open();
+      $scope['openDrawer' + $attr.side] = function(openSide) {
+        ctrl.open(($attr.side === 'left') ? 0 : 1);
       };
-      $scope.closeDrawer = function() {
+      $scope['closeDrawer' + $attr.side] = function(closeSide) {
         console.log('close');
-        ctrl.close();
+        ctrl.close(($attr.side === 'left') ? 0 : 1);
       };
     }
   }
-}]);
+}])
 
 .directive('drawerClose', ['$rootScope', function($rootScope) {
   return {
     restrict: 'A',
-    link: function($scope, $element) {
+    link: function($scope, $element, $attr) {
       $element.bind('click', function() {
         var drawerCtrl = $element.inheritedData('$drawerController');
-        drawerCtrl.close();
+        drawerCtrl.close(($attr.drawerClose === 'left') ? 0 : 1);
       });
     }
   }
