@@ -84,13 +84,13 @@ angular.module('ionic.contrib.drawer', ['ionic'])
     ionic.requestAnimationFrame(function() {
       if(side === LEFT && newX < (-width / 2)) {
         el.style.transform = el.style.webkitTransform = 'translate3d(' + -width + 'px, 0, 0)';
-        angular.element(document.getElementById('blurrable-content')).css('-webkit-filter', 'blur(0)');
+        angular.element(document.getElementById('blurrable-content')).removeClass('blur');
       } else if(side === RIGHT && newX > (width / 2)) {
         el.style.transform = el.style.webkitTransform = 'translate3d(' + width + 'px, 0, 0)';
-        angular.element(document.getElementById('blurrable-content')).css('-webkit-filter', 'blur(0)');
+        angular.element(document.getElementById('blurrable-content')).removeClass('blur');
       } else {
         el.style.transform = el.style.webkitTransform = 'translate3d(0px, 0, 0)';
-        angular.element(document.getElementById('blurrable-content')).css('-webkit-filter', 'blur(10px)');
+        angular.element(document.getElementById('blurrable-content')).addClass('blur');
       }
     });
   };
@@ -126,6 +126,10 @@ angular.module('ionic.contrib.drawer', ['ionic'])
         if(side === LEFT) blurPx = (lastX > width) ? 10 : Math.round((lastX / width) * 10);
         if(side === RIGHT) blurPx = (newX > width) ? 0 : Math.round(((width - newX) / width) * 10);
         angular.element(document.getElementById('blurrable-content')).css('-webkit-filter', 'blur(' + blurPx + 'px)');
+        if(blurPx === 0) {
+          angular.element(document.getElementById('blurrable-content')).css('-webkit-filter', null);
+          angular.element(document.getElementById('blurrable-content')).removeClass('blur');
+        }
       });
 
     }
