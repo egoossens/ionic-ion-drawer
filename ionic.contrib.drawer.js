@@ -14,6 +14,7 @@ angular.module('ionic.contrib.drawer', ['ionic'])
   var dragging = false;
   var startX, lastX, offsetX, newX;
   var side;
+  var canOpenByDragging = false;
 
   // How far to drag before triggering
   var thresholdX = 15;
@@ -114,9 +115,9 @@ angular.module('ionic.contrib.drawer', ['ionic'])
       if(Math.abs(lastX - startX) > thresholdX) {
         if(isTarget(e.target)) {
           startTargetDrag(e);
-        } else if((side === LEFT && startX < edgeX) || (side === RIGHT && startX > ($window.innerWidth - edgeX))) {
+        } else if(canOpenByDragging && ((side === LEFT && startX < edgeX) || (side === RIGHT && startX > ($window.innerWidth - edgeX)))) {
           startDrag(e);
-        } 
+        }
       }
     } else {
       //console.log(lastX, offsetX, lastX - offsetX);
@@ -128,7 +129,6 @@ angular.module('ionic.contrib.drawer', ['ionic'])
         if(side === LEFT) blurPx = (lastX > width) ? 10 : Math.round((lastX / width) * 10);
         if(side === RIGHT) blurPx = (newX > width) ? 0 : Math.round(((width - newX) / width) * 10);
         angular.element(document.getElementById('blurrable-content')).css('-webkit-filter', 'blur(' + blurPx + 'px)');
-        console.log('blurPx', blurPx);
         if(blurPx === 0) {
           angular.element(document.getElementById('blurrable-content')).css('-webkit-filter', null);
           angular.element(document.getElementById('blurrable-content')).removeClass('blur');
